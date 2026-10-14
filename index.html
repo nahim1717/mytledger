@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apparel Order Ledger - MyTailor</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              900: '#0c4a6e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #printable-receipt, #printable-receipt * { visibility: visible; }
+      #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+  <!-- Navigation Bar -->
+  <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-b border-slate-200 dark:border-slate-700 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
+          <i class="fa-solid me-0.5 fa-shirt"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight text-slate-900 dark:text-white">MyTailor Order Ledger</h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Digital Tracking System (MVR)</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button id="btn-export" class="px-3 py-1.5 text-xs sm:text-sm font-medium bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition flex items-center gap-2">
+          <i class="fa-solid fa-file-csv"></i> <span class="hidden sm:inline">Export CSV</span>
+        </button>
+        <button id="theme-toggle" class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
+          <i id="theme-toggle-dark-icon" class="fa-solid fa-moon hidden"></i>
+          <i id="theme-toggle-light-icon" class="fa-solid fa-sun"></i>
+        </button>
+        <button id="btn-open-form" class="px-4 py-2 text-sm font-medium bg-brand-600 hover:bg-brand-700 text-white rounded-lg shadow-sm transition flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i> <span>New Order</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Analytics Dashboard Bar -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Revenue</p>
+          <p id="stat-total-revenue" class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1">MVR 0</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+          <i class="fa-solid fa-vault"></i>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Paid Revenue</p>
+          <p id="stat-paid-revenue" class="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">MVR 0</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Unpaid Total</p>
+          <p id="stat-unpaid-revenue" class="text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">MVR 0</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Orders / Items</p>
+          <p id="stat-total-orders" class="text-lg sm:text-xl font-bold text-purple-600 dark:text-purple-400 mt-1">0 Orders</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+          <i class="fa-solid fa-boxes-stacked"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+      <div class="flex flex-col md:flex-row gap-3 items-center justify-between">
+        <div class="relative w-full md:w-96">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input type="text" id="input-search" placeholder="Search Order ID (e.g. 9103397, 9822240)..." 
+            class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-700/50 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+          <select id="filter-status" class="px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/50 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-700 dark:text-slate-200">
+            <option value="ALL">All Statuses</option>
+            <option value="Paid">Paid</option>
+            <option value="Unpaid">Unpaid</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+
+          <select id="filter-size" class="px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/50 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-700 dark:text-slate-200">
+            <option value="ALL">All Sizes</option>
+            <option value="3XS">3XS</option>
+            <option value="2XS">2XS</option>
+            <option value="XS">XS</option>
+            <option value="S">S</option>
+            <option value="M">M</option>
+            <option value="L">L</option>
+            <option value="XL">XL</option>
+            <option value="2XL">2XL</option>
+            <option value="3XL">3XL</option>
+            <option value="4XL">4XL</option>
+            <option value="5XL">5XL</option>
+            <option value="6XL">6XL</option>
+            <option value="7XL">7XL</option>
+          </select>
+
+          <button id="btn-reset-filters" class="p-2 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition" title="Reset Filters">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+
+          <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
+
+          <div class="flex items-center bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+            <button id="view-btn-table" class="px-2.5 py-1 text-xs rounded-md bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 font-semibold shadow-xs">
+              <i class="fa-solid fa-list"></i>
+            </button>
+            <button id="view-btn-grid" class="px-2.5 py-1 text-xs rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+              <i class="fa-solid fa-border-all"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Display View -->
+    <div id="container-table" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-700">
+            <tr>
+              <th class="py-3.5 px-4">Order ID</th>
+              <th class="py-3.5 px-4">Items Summary</th>
+              <th class="py-3.5 px-4">Special Notes</th>
+              <th class="py-3.5 px-4">Status</th>
+              <th class="py-3.5 px-4 text-right">Total (MVR)</th>
+              <th class="py-3.5 px-4 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="table-body" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
+        </table>
+      </div>
+      <div id="table-empty" class="hidden p-8 text-center text-slate-500 dark:text-slate-400">
+        <i class="fa-solid fa-folder-open text-4xl mb-3 text-slate-300 dark:text-slate-600"></i>
+        <p class="text-base font-medium">No matching orders found</p>
+        <p class="text-xs mt-1">Try searching with a different ID or resetting your filters.</p>
+      </div>
+    </div>
+
+    <div id="container-grid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  </main>
+
+  <!-- Order Modal (Add/Edit) -->
+  <div id="modal-order" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-800 w-full max-w-3xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden my-8">
+      <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-700/50">
+        <h3 id="modal-title" class="font-bold text-lg text-slate-900 dark:text-white">Create New Order</h3>
+        <button id="btn-close-modal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <form id="form-order" class="p-6 space-y-5">
+        <input type="hidden" id="form-order-index" value="-1">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Order / Ref ID *</label>
+            <input type="text" id="field-order-id" required placeholder="e.g. 9103397"
+              class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Payment Status</label>
+            <select id="field-status" class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+              <option value="Paid">Paid</option>
+              <option value="Unpaid">Unpaid</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">General Notes / Instructions</label>
+          <input type="text" id="field-notes" placeholder="e.g. giruyan nula..."
+            class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Order Items</label>
+            <button type="button" id="btn-add-item-row" class="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline flex items-center gap-1">
+              <i class="fa-solid fa-plus"></i> Add Item
+            </button>
+          </div>
+          <div id="items-container" class="space-y-3"></div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+          <div>
+            <span class="text-xs text-slate-500 dark:text-slate-400 block">Calculated Total</span>
+            <span id="form-calculated-total" class="text-xl font-bold text-brand-600 dark:text-brand-400">MVR 0</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <button type="button" id="btn-cancel-modal" class="px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">Cancel</button>
+            <button type="submit" class="px-5 py-2 text-sm font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-lg shadow-sm">Save Order</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Hidden Printable Receipt Template -->
+  <div id="printable-receipt" class="hidden p-8 max-w-md mx-auto bg-white text-slate-900">
+    <div class="text-center border-b pb-4 mb-4">
+      <h2 class="text-2xl font-bold uppercase tracking-wider">MyTailor Ledger</h2>
+      <p class="text-xs text-slate-500">Order Confirmation Receipt</p>
+    </div>
+    <div class="space-y-2 mb-4 text-sm">
+      <div class="flex justify-between"><span class="font-semibold">Order Ref / ID:</span> <span id="print-order-id"></span></div>
+      <div class="flex justify-between"><span class="font-semibold">Date:</span> <span id="print-date"></span></div>
+      <div class="flex justify-between"><span class="font-semibold">Payment Status:</span> <span id="print-status"></span></div>
+      <div class="flex justify-between"><span class="font-semibold">Account Name:</span> <span>MOHAMED NAZIM</span></div>
+      <div class="flex justify-between"><span class="font-semibold">Account No:</span> <span class="font-mono">7724343309101</span></div>
+      <div id="print-notes-container" class="flex justify-between hidden"><span class="font-semibold">Notes:</span> <span id="print-notes"></span></div>
+    </div>
+    <table class="w-full text-xs text-left mb-4 border-t border-b border-slate-200 py-2">
+      <thead>
+        <tr class="border-b"><th class="py-1">Item</th><th class="py-1">Size / Type</th><th class="py-1 text-right">Price</th></tr>
+      </thead>
+      <tbody id="print-items-tbody"></tbody>
+    </table>
+    <div class="flex justify-between text-base font-bold border-t pt-2">
+      <span>Total:</span><span id="print-total"></span>
+    </div>
+    <div class="text-center text-xs text-slate-400 mt-8">Thank you for your business!</div>
+  </div>
+
+  <script>
+    // Size Charts definitions from MyTailor Chart Images
+    const SIZE_CHARTS = {
+      TShirt: {
+        Ad: ['2XS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'],
+        Kid: ['3XS', '2XS', 'XS', 'S', 'M', 'L', 'XL', '2XL'],
+        Ladies: ['2XS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'],
+        Muslimah: ['M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL']
+      },
+      Track: {
+        Ad: ['2XS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL'],
+        Kid: ['3XS', '2XS', 'XS', 'S', 'M', 'L', 'XL', '2XL']
+      }
+    };
+
+    const initialOrders = [
+      {
+        id: "9103397",
+        status: "Paid",
+        notes: "",
+        items: [
+          { item: "TShirt", category: "Ad", size: "2XL", collar: "Without Collar", sleeve: "LONG SLEEVE", price: 420 },
+          { item: "Track", category: "Ad", size: "2XL", collar: "", sleeve: "", price: 400 }
+        ],
+        total: 820
+      },
+      {
+        id: "9931101",
+        status: "Paid",
+        notes: "Sleeve length 14.5",
+        items: [
+          { item: "TShirt", category: "Kid", size: "XL", collar: "Without Collar", sleeve: "LONG SLEEVE", price: 320 },
+          { item: "Track", category: "Kid", size: "XS", collar: "", sleeve: "", price: 260 }
+        ],
+        total: 580
+      },
+      {
+        id: "9532313",
+        status: "Paid",
+        notes: "giruyan nula",
+        items: [
+          { item: "TShirt", category: "Ad", size: "L", collar: "Without Collar", sleeve: "LONG SLEEVE", price: 380 },
+          { item: "Track", category: "Ad", size: "2XS", collar: "", sleeve: "", price: 320 }
+        ],
+        total: 700
+      },
+      {
+        id: "9822240",
+        status: "Paid",
+        notes: "",
+        items: [
+          { item: "TShirt", category: "Kid", size: "XL", collar: "Without Collar", sleeve: "LONG SLEEVE", price: 320 },
+          { item: "Track", category: "Kid", size: "XL", collar: "", sleeve: "", price: 300 },
+          { item: "TShirt", category: "Ad", size: "XL", collar: "Without Collar", sleeve: "LONG SLEEVE", price: 420 },
+          { item: "Track", category: "Ad", size: "XL", collar: "", sleeve: "", price: 380 }
+        ],
+        total: 1420
+      },
+      {
+        id: "7611737",
+        status: "Unpaid",
+        notes: "",
+        items: [
+          { item: "TShirt", category: "Ad", size: "M", collar: "With Collar", sleeve: "LONG SLEEVE", price: 360 },
+          { item: "TShirt", category: "Ad", size: "2XL", collar: "With Collar", sleeve: "SHORT SLEEVE", price: 200 },
+          { item: "Track", category: "Ad", size: "3XL", collar: "", sleeve: "", price: 200 },
+          { item: "Track", category: "Ad", size: "S", collar: "", sleeve: "", price: 180 }
+        ],
+        total: 940
+      }
+    ];
+
+    let orders = JSON.parse(localStorage.getItem('garment_ledger_orders_mvr')) || initialOrders;
+
+    const tableBody = document.getElementById('table-body');
+    const tableEmpty = document.getElementById('table-empty');
+    const gridContainer = document.getElementById('container-grid');
+    const tableContainer = document.getElementById('container-table');
+    const searchInput = document.getElementById('input-search');
+    const filterStatus = document.getElementById('filter-status');
+    const filterSize = document.getElementById('filter-size');
+    const modalOrder = document.getElementById('modal-order');
+    const formOrder = document.getElementById('form-order');
+    const itemsContainer = document.getElementById('items-container');
+
+    // Theme Toggle
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const darkIcon = document.getElementById('theme-toggle-dark-icon');
+    const lightIcon = document.getElementById('theme-toggle-light-icon');
+
+    if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+      lightIcon.classList.remove('hidden');
+      darkIcon.classList.add('hidden');
+    } else {
+      document.documentElement.classList.remove('dark');
+      lightIcon.classList.add('hidden');
+      darkIcon.classList.remove('hidden');
+    }
+
+    themeToggleBtn.addEventListener('click', () => {
+      darkIcon.classList.toggle('hidden');
+      lightIcon.classList.toggle('hidden');
+      if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('color-theme', 'light');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('color-theme', 'dark');
+      }
+    });
+
+    function saveOrders() {
+      localStorage.setItem('garment_ledger_orders_mvr', JSON.stringify(orders));
+      render();
+    }
+
+    function updateStats(filteredOrders) {
+      const totalRevenue = filteredOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+      
+      const paidRevenue = filteredOrders
+        .filter(o => o.status === 'Paid')
+        .reduce((sum, o) => sum + Number(o.total || 0), 0);
+        
+      const unpaidRevenue = filteredOrders
+        .filter(o => o.status === 'Unpaid')
+        .reduce((sum, o) => sum + Number(o.total || 0), 0);
+
+      const totalItemsCount = filteredOrders.reduce((sum, o) => sum + (o.items ? o.items.length : 0), 0);
+
+      document.getElementById('stat-total-revenue').textContent = `MVR ${totalRevenue.toLocaleString()}`;
+      document.getElementById('stat-paid-revenue').textContent = `MVR ${paidRevenue.toLocaleString()}`;
+      document.getElementById('stat-unpaid-revenue').textContent = `MVR ${unpaidRevenue.toLocaleString()}`;
+      document.getElementById('stat-total-orders').textContent = `${filteredOrders.length} Orders (${totalItemsCount} items)`;
+    }
+
+    function getFilteredOrders() {
+      const query = searchInput.value.toLowerCase().trim();
+      const statusVal = filterStatus.value;
+      const sizeVal = filterSize.value;
+
+      return orders.filter(order => {
+        const matchesQuery = order.id.toLowerCase().includes(query) ||
+          (order.notes && order.notes.toLowerCase().includes(query)) ||
+          order.items.some(i => 
+            i.item.toLowerCase().includes(query) || 
+            i.category.toLowerCase().includes(query) || 
+            i.size.toLowerCase().includes(query) ||
+            i.collar.toLowerCase().includes(query) ||
+            i.sleeve.toLowerCase().includes(query)
+          );
+
+        const matchesStatus = statusVal === 'ALL' || order.status === statusVal;
+
+        let matchesSize = true;
+        if (sizeVal !== 'ALL') {
+          matchesSize = order.items.some(i => i.size === sizeVal);
+        }
+
+        return matchesQuery && matchesStatus && matchesSize;
+      });
+    }
+
+    function render() {
+      const filtered = getFilteredOrders();
+      updateStats(filtered);
+
+      tableBody.innerHTML = '';
+      gridContainer.innerHTML = '';
+
+      if (filtered.length === 0) {
+        tableEmpty.classList.remove('hidden');
+      } else {
+        tableEmpty.classList.add('hidden');
+      }
+
+      filtered.forEach((order) => {
+        const actualIndex = orders.indexOf(order);
+        let statusBadgeClass = "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300";
+        if (order.status === 'Paid') statusBadgeClass = "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300";
+        if (order.status === 'Unpaid') statusBadgeClass = "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300";
+        if (order.status === 'Cancelled') statusBadgeClass = "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300";
+
+        const itemsListHtml = order.items.map(i => {
+          let details = `${i.category} ${i.size}`;
+          if (i.item === 'TShirt') {
+            if (i.collar) details += ` • ${i.collar}`;
+            if (i.sleeve) details += ` • ${i.sleeve}`;
+          }
+          return `
+            <div class="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-xs mr-1 mb-1">
+              <span class="font-semibold text-slate-800 dark:text-slate-200">${i.item}</span>
+              <span class="text-slate-500 dark:text-slate-400">(${details})</span>
+              <span class="font-medium text-brand-600 dark:text-brand-400">MVR ${i.price}</span>
+            </div>
+          `;
+        }).join('');
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 dark:hover:bg-slate-700/30 transition";
+        tr.innerHTML = `
+          <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white font-mono">${order.id}</td>
+          <td class="py-3.5 px-4 max-w-xs">${itemsListHtml}</td>
+          <td class="py-3.5 px-4 text-slate-500 dark:text-slate-400 text-xs italic">${order.notes || '-'}</td>
+          <td class="py-3.5 px-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full ${statusBadgeClass}">${order.status}</span></td>
+          <td class="py-3.5 px-4 text-right font-bold text-slate-900 dark:text-white">MVR ${Number(order.total).toLocaleString()}</td>
+          <td class="py-3.5 px-4 text-center space-x-1">
+            <button onclick="printReceipt(${actualIndex})" class="p-1.5 text-slate-500 hover:text-brand-600 rounded transition" title="Print Bill"><i class="fa-solid fa-print"></i></button>
+            <button onclick="copyToClipboard(${actualIndex}, this)" class="p-1.5 text-slate-500 hover:text-blue-600 rounded transition" title="Copy Order Details"><i class="fa-regular fa-copy"></i></button>
+            <button onclick="openEditModal(${actualIndex})" class="p-1.5 text-slate-500 hover:text-brand-600 rounded transition" title="Edit Order"><i class="fa-solid fa-pen-to-square"></i></button>
+            <button onclick="deleteOrder(${actualIndex})" class="p-1.5 text-slate-500 hover:text-rose-600 rounded transition" title="Delete Order"><i class="fa-solid fa-trash-can"></i></button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+
+        const card = document.createElement('div');
+        card.className = "bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3 flex flex-col justify-between";
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="font-mono font-bold text-lg text-slate-900 dark:text-white">#${order.id}</span>
+              <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full ${statusBadgeClass}">${order.status}</span>
+            </div>
+            ${order.notes ? `<p class="text-xs text-slate-500 dark:text-slate-400 italic mb-3"><i class="fa-solid fa-note-sticky mr-1"></i>${order.notes}</p>` : ''}
+            <div class="space-y-1.5 my-2">${itemsListHtml}</div>
+          </div>
+          <div class="pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <div>
+              <span class="text-xs text-slate-400 block">Total Amount</span>
+              <span class="text-lg font-bold text-slate-900 dark:text-white">MVR ${Number(order.total).toLocaleString()}</span>
+            </div>
+            <div class="flex gap-1">
+              <button onclick="printReceipt(${actualIndex})" class="p-2 text-xs bg-slate-100 dark:bg-slate-700 rounded-lg" title="Print"><i class="fa-solid fa-print"></i></button>
+              <button onclick="copyToClipboard(${actualIndex}, this)" class="p-2 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-lg" title="Copy Text"><i class="fa-regular fa-copy"></i></button>
+              <button onclick="openEditModal(${actualIndex})" class="p-2 text-xs bg-slate-100 dark:bg-slate-700 rounded-lg" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button onclick="deleteOrder(${actualIndex})" class="p-2 text-xs bg-rose-50 text-rose-600 rounded-lg" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>
+        `;
+        gridContainer.appendChild(card);
+      });
+    }
+
+    function copyToClipboard(index, btnElement) {
+      const order = orders[index];
+      let msg = `*Order ID:* #${order.id}\n`;
+      msg += `*Status:* ${order.status}\n`;
+      msg += `--------------------------------\n`;
+      msg += `*Items Ordered:*\n`;
+      
+      order.items.forEach((i, idx) => {
+        let details = `${i.category} ${i.size}`;
+        if (i.item === 'TShirt') {
+          if (i.collar) details += `, ${i.collar}`;
+          if (i.sleeve) details += `, ${i.sleeve}`;
+        }
+        msg += `${idx + 1}. ${i.item} (${details}) - MVR ${i.price}\n`;
+      });
+
+      msg += `--------------------------------\n`;
+      msg += `*Total Amount:* MVR ${Number(order.total).toLocaleString()}\n`;
+      msg += `*Account Name:* MOHAMED NAZIM\n`;
+      msg += `*Account No:* 7724343309101\n`;
+      msg += `--------------------------------\n`;
+      msg += `Thank you for your business! 🙏`;
+
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(msg).then(() => showCopySuccess(btnElement));
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = msg;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showCopySuccess(btnElement);
+      }
+    }
+
+    function showCopySuccess(btnElement) {
+      if (!btnElement) return;
+      const icon = btnElement.querySelector('i');
+      if (icon) {
+        const originalClass = icon.className;
+        icon.className = 'fa-solid fa-check text-emerald-600 dark:text-emerald-400';
+        setTimeout(() => {
+          icon.className = originalClass;
+        }, 1500);
+      }
+    }
+
+    function populateSizeDropdown(sizeSelect, itemType, category, selectedSize = '') {
+      sizeSelect.innerHTML = '';
+      const availableChart = SIZE_CHARTS[itemType] || SIZE_CHARTS['TShirt'];
+      const sizes = availableChart[category] || availableChart['Ad'] || ['S', 'M', 'L', 'XL', '2XL'];
+      
+      sizes.forEach(sz => {
+        const opt = document.createElement('option');
+        opt.value = sz;
+        opt.textContent = sz;
+        if (sz === selectedSize) opt.selected = true;
+        sizeSelect.appendChild(opt);
+      });
+    }
+
+    function addItemRow(itemData = { item: 'TShirt', category: 'Ad', size: 'L', collar: 'Without Collar', sleeve: 'LONG SLEEVE', price: 0 }) {
+      const div = document.createElement('div');
+      div.className = "item-row bg-slate-50 dark:bg-slate-700/40 p-3 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2";
+      
+      div.innerHTML = `
+        <div class="grid grid-cols-12 gap-2 items-center">
+          <div class="col-span-3">
+            <label class="block text-[10px] text-slate-400 uppercase font-bold mb-0.5">Item</label>
+            <select class="item-type w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-white">
+              <option value="TShirt" ${itemData.item === 'TShirt' ? 'selected' : ''}>TShirt</option>
+              <option value="Track" ${itemData.item === 'Track' ? 'selected' : ''}>Track</option>
+            </select>
+          </div>
+          <div class="col-span-2">
+            <label class="block text-[10px] text-slate-400 uppercase font-bold mb-0.5">Category</label>
+            <select class="item-category w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-white">
+              <option value="Ad" ${itemData.category === 'Ad' ? 'selected' : ''}>Ad</option>
+              <option value="Kid" ${itemData.category === 'Kid' ? 'selected' : ''}>Kid</option>
+              <option value="Ladies" ${itemData.category === 'Ladies' ? 'selected' : ''}>Ladies</option>
+              <option value="Muslimah" ${itemData.category === 'Muslimah' ? 'selected' : ''}>Muslimah</option>
+            </select>
+          </div>
+          <div class="col-span-2">
+            <label class="block text-[10px] text-slate-400 uppercase font-bold mb-0.5">Size Chart</label>
+            <select class="item-size w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-white font-semibold">
+            </select>
+          </div>
+          <div class="col-span-3">
+            <label class="block text-[10px] text-slate-400 uppercase font-bold mb-0.5">Price (MVR)</label>
+            <input type="number" value="${itemData.price}" placeholder="MVR" class="item-price w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-white text-right">
+          </div>
+          <div class="col-span-2 flex justify-end pt-4">
+            <button type="button" class="btn-remove-row text-rose-500 hover:text-rose-700 p-1 text-sm"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <div class="tshirt-options grid grid-cols-2 gap-2 pt-1 border-t border-slate-200 dark:border-slate-600 ${itemData.item === 'Track' ? 'hidden' : ''}">
+          <div>
+            <label class="block text-[10px] text-slate-400 uppercase font-bold mb-0.5">Collar Option</label>
+            <select class="item-collar w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-white">
+              <option value="Without Collar" ${itemData.collar === 'Without Collar' ? 'selected' : ''}>Without Collar</option>
+              <option value="With Collar" ${itemData.collar === 'With Collar' ? 'selected' : ''}>With Collar</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400 uppercase font-bold mb-0.5">Sleeve Option</label>
+            <select class="item-sleeve w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-white">
+              <option value="LONG SLEEVE" ${itemData.sleeve === 'LONG SLEEVE' ? 'selected' : ''}>LONG SLEEVE</option>
+              <option value="SHORT SLEEVE" ${itemData.sleeve === 'SHORT SLEEVE' ? 'selected' : ''}>SHORT SLEEVE</option>
+            </select>
+          </div>
+        </div>
+      `;
+
+      const typeSelect = div.querySelector('.item-type');
+      const categorySelect = div.querySelector('.item-category');
+      const sizeSelect = div.querySelector('.item-size');
+      const tshirtOptions = div.querySelector('.tshirt-options');
+
+      populateSizeDropdown(sizeSelect, itemData.item, itemData.category, itemData.size);
+
+      typeSelect.addEventListener('change', (e) => {
+        const itemVal = e.target.value;
+        if (itemVal === 'Track') {
+          tshirtOptions.classList.add('hidden');
+        } else {
+          tshirtOptions.classList.remove('hidden');
+        }
+        populateSizeDropdown(sizeSelect, itemVal, categorySelect.value, sizeSelect.value);
+      });
+
+      categorySelect.addEventListener('change', (e) => {
+        populateSizeDropdown(sizeSelect, typeSelect.value, e.target.value, sizeSelect.value);
+      });
+
+      div.querySelector('.item-price').addEventListener('input', calculateModalTotal);
+      div.querySelector('.btn-remove-row').addEventListener('click', () => { div.remove(); calculateModalTotal(); });
+      itemsContainer.appendChild(div);
+      calculateModalTotal();
+    }
+
+    function calculateModalTotal() {
+      let total = 0;
+      itemsContainer.querySelectorAll('.item-price').forEach(p => total += Number(p.value || 0));
+      document.getElementById('form-calculated-total').textContent = `MVR ${total.toLocaleString()}`;
+    }
+
+    function openAddModal() {
+      document.getElementById('modal-title').textContent = 'Create New Order';
+      document.getElementById('form-order-index').value = -1;
+      formOrder.reset();
+      itemsContainer.innerHTML = '';
+      addItemRow();
+      modalOrder.classList.remove('hidden');
+    }
+
+    function openEditModal(index) {
+      const order = orders[index];
+      document.getElementById('modal-title').textContent = `Edit Order #${order.id}`;
+      document.getElementById('form-order-index').value = index;
+      document.getElementById('field-order-id').value = order.id;
+      document.getElementById('field-status').value = order.status;
+      document.getElementById('field-notes').value = order.notes || '';
+      itemsContainer.innerHTML = '';
+      order.items.forEach(i => addItemRow(i));
+      modalOrder.classList.remove('hidden');
+    }
+
+    function closeModal() { modalOrder.classList.add('hidden'); }
+
+    function deleteOrder(index) {
+      if (confirm(`Are you sure you want to delete order #${orders[index].id}?`)) {
+        orders.splice(index, 1);
+        saveOrders();
+      }
+    }
+
+    function printReceipt(index) {
+      const order = orders[index];
+      document.getElementById('print-order-id').textContent = order.id;
+      document.getElementById('print-date').textContent = new Date().toLocaleDateString();
+      document.getElementById('print-status').textContent = order.status;
+      
+      const notesContainer = document.getElementById('print-notes-container');
+      if (order.notes) {
+        document.getElementById('print-notes').textContent = order.notes;
+        notesContainer.classList.remove('hidden');
+      } else {
+        notesContainer.classList.add('hidden');
+      }
+
+      const tbody = document.getElementById('print-items-tbody');
+      tbody.innerHTML = '';
+      order.items.forEach(i => {
+        let details = `${i.category} ${i.size}`;
+        if (i.item === 'TShirt') {
+          if (i.collar) details += ` (${i.collar}, ${i.sleeve})`;
+        }
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="py-1 font-semibold">${i.item}</td><td class="py-1">${details}</td><td class="py-1 text-right">MVR ${i.price}</td>`;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('print-total').textContent = `MVR ${Number(order.total).toLocaleString()}`;
+      
+      const printArea = document.getElementById('printable-receipt');
+      printArea.classList.remove('hidden');
+      window.print();
+      printArea.classList.add('hidden');
+    }
+
+    function exportCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,Order ID,Payment Status,Item,Category,Size,Collar,Sleeve,Price (MVR),Order Total (MVR),Notes\n";
+      orders.forEach(order => {
+        order.items.forEach(item => {
+          csvContent += `"${order.id}","${order.status}","${item.item}","${item.category}","${item.size}","${item.collar || ''}","${item.sleeve || ''}",${item.price},${order.total},"${order.notes || ''}"\n`;
+        });
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `garment_ledger_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    document.getElementById('btn-open-form').addEventListener('click', openAddModal);
+    document.getElementById('btn-close-modal').addEventListener('click', closeModal);
+    document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
+    document.getElementById('btn-add-item-row').addEventListener('click', () => addItemRow());
+    document.getElementById('btn-export').addEventListener('click', exportCSV);
+
+    searchInput.addEventListener('input', render);
+    filterStatus.addEventListener('change', render);
+    filterSize.addEventListener('change', render);
+    document.getElementById('btn-reset-filters').addEventListener('click', () => {
+      searchInput.value = ''; filterStatus.value = 'ALL'; filterSize.value = 'ALL'; render();
+    });
+
+    document.getElementById('view-btn-table').addEventListener('click', () => {
+      tableContainer.classList.remove('hidden'); gridContainer.classList.add('hidden');
+      document.getElementById('view-btn-table').className = "px-2.5 py-1 text-xs rounded-md bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 font-semibold shadow-xs";
+      document.getElementById('view-btn-grid').className = "px-2.5 py-1 text-xs rounded-md text-slate-500 dark:text-slate-400";
+    });
+
+    document.getElementById('view-btn-grid').addEventListener('click', () => {
+      tableContainer.classList.add('hidden'); gridContainer.classList.remove('hidden');
+      document.getElementById('view-btn-grid').className = "px-2.5 py-1 text-xs rounded-md bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 font-semibold shadow-xs";
+      document.getElementById('view-btn-table').className = "px-2.5 py-1 text-xs rounded-md text-slate-500 dark:text-slate-400";
+    });
+
+    formOrder.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const editIndex = Number(document.getElementById('form-order-index').value);
+      const id = document.getElementById('field-order-id').value.trim();
+      const status = document.getElementById('field-status').value;
+      const notes = document.getElementById('field-notes').value.trim();
+
+      const items = [];
+      let total = 0;
+      itemsContainer.querySelectorAll('.item-row').forEach(row => {
+        const item = row.querySelector('.item-type').value;
+        const category = row.querySelector('.item-category').value;
+        const size = row.querySelector('.item-size').value;
+        const collar = item === 'TShirt' ? row.querySelector('.item-collar').value : '';
+        const sleeve = item === 'TShirt' ? row.querySelector('.item-sleeve').value : '';
+        const price = Number(row.querySelector('.item-price').value || 0);
+
+        items.push({ item, category, size, collar, sleeve, price });
+        total += price;
+      });
+
+      const orderData = { id, status, notes, items, total };
+      if (editIndex === -1) orders.unshift(orderData);
+      else orders[editIndex] = orderData;
+
+      saveOrders();
+      closeModal();
+    });
+
+    render();
+  </script>
+</body>
+</html>
